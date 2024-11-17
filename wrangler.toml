@@ -9,7 +9,7 @@ compatibility_flags = ["nodejs_compat"]
 enabled = true
 
 [[r2_buckets]]
-binding = "STUFF_BUCKET" # This is the variable name you'll use in your Worker code
+binding = "STUFF_BUCKET" 
 bucket_name = "stuff"
 preview_bucket_name = "stuff"
 
