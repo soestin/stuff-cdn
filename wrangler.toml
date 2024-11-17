@@ -18,4 +18,3 @@ pattern = "cdn.soestin.nl"
 custom_domain = true
 
 [vars]
-API_KEY = "4f3d1168-822b-4fe7-83b4-f6b40b654421"
