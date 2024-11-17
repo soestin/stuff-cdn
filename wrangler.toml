@@ -17,4 +17,3 @@ preview_bucket_name = "stuff"
 pattern = "cdn.soestin.nl"
 custom_domain = true
 
-[vars]
