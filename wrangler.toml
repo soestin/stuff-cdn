@@ -10,10 +10,10 @@ enabled = true
 
 [[r2_buckets]]
 binding = "STUFF_BUCKET" 
-bucket_name = "stuff"
-preview_bucket_name = "stuff"
+bucket_name = "cdn"
+preview_bucket_name = "cdn"
 
 [[routes]]
-pattern = "cdn.soestin.nl"
+pattern = "cdn.vibesmp.net"
 custom_domain = true
 
