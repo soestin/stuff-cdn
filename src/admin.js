@@ -30,7 +30,7 @@ function sanitizeFileName(filename) {
 const ALLOWED_MIME_TYPES = new Set([
     'image/jpeg', 'image/png', 'image/gif', 'image/webp',
     'text/plain', 'text/html', 'text/css', 'text/javascript',
-    'application/json', 'application/pdf'
+    'application/json', 'application/pdf', 'text/markdown'
 ]);
 
 const MIME_TYPE_MAP = {
