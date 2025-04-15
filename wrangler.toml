@@ -17,3 +17,7 @@ preview_bucket_name = "cdn"
 pattern = "cdn.vibesmp.net"
 custom_domain = true
 
+[[kv_namespaces]]
+binding = "AUTH_STORE"
+id = "019b1f7348da4a2eaa7a28aed4a2f38a"
+preview_id = "019b1f7348da4a2eaa7a28aed4a2f38a"
