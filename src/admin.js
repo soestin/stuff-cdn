@@ -44,7 +44,8 @@ const MIME_TYPE_MAP = {
     '.css': 'text/css',
     '.js': 'text/javascript',
     '.json': 'application/json',
-    '.pdf': 'application/pdf'
+    '.pdf': 'application/pdf',
+    '.md': 'text/markdown'
 };
 
 export async function handleAdminList(request, env) {
