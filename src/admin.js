@@ -27,25 +27,65 @@ function sanitizeFileName(filename) {
     return filename.replace(/^\/+/, '').replace(/\.{2,}/g, '.');
 }
 
-const ALLOWED_MIME_TYPES = new Set([
-    'image/jpeg', 'image/png', 'image/gif', 'image/webp',
-    'text/plain', 'text/html', 'text/css', 'text/javascript',
-    'application/json', 'application/pdf', 'text/markdown'
-]);
-
+// Remove ALLOWED_MIME_TYPES since we'll accept all types
 const MIME_TYPE_MAP = {
+    // Common image types
     '.jpg': 'image/jpeg',
-    '.jpeg': 'image/jpeg',
+    '.jpeg': 'image/jpeg', 
     '.png': 'image/png',
     '.gif': 'image/gif',
     '.webp': 'image/webp',
+    '.svg': 'image/svg+xml',
+    '.ico': 'image/x-icon',
+    
+    // Document types
+    '.pdf': 'application/pdf',
+    '.doc': 'application/msword',
+    '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    '.xls': 'application/vnd.ms-excel',
+    '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    '.ppt': 'application/vnd.ms-powerpoint',
+    '.pptx': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+    
+    // Text types
     '.txt': 'text/plain',
+    '.csv': 'text/csv',
+    '.md': 'text/markdown',
     '.html': 'text/html',
+    '.htm': 'text/html',
     '.css': 'text/css',
     '.js': 'text/javascript',
     '.json': 'application/json',
-    '.pdf': 'application/pdf',
-    '.md': 'text/markdown'
+    '.xml': 'application/xml',
+    '.yaml': 'application/x-yaml',
+    '.yml': 'application/x-yaml',
+    
+    // Archive types
+    '.zip': 'application/zip',
+    '.rar': 'application/x-rar-compressed',
+    '.7z': 'application/x-7z-compressed',
+    '.tar': 'application/x-tar',
+    '.gz': 'application/gzip',
+    
+    // Audio types
+    '.mp3': 'audio/mpeg',
+    '.wav': 'audio/wav',
+    '.ogg': 'audio/ogg',
+    '.m4a': 'audio/mp4',
+    
+    // Video types
+    '.mp4': 'video/mp4',
+    '.webm': 'video/webm',
+    '.avi': 'video/x-msvideo',
+    '.mov': 'video/quicktime',
+    '.wmv': 'video/x-ms-wmv',
+    
+    // Font types
+    '.ttf': 'font/ttf',
+    '.otf': 'font/otf',
+    '.woff': 'font/woff',
+    '.woff2': 'font/woff2',
+    '.eot': 'application/vnd.ms-fontobject'
 };
 
 export async function handleAdminList(request, env) {
@@ -120,30 +160,7 @@ export async function handleAdminUpload(request, env) {
 
         // Validate file type
         const fileExtension = '.' + filename.split('.').pop().toLowerCase();
-        const expectedMimeType = MIME_TYPE_MAP[fileExtension];
-        
-        if (!expectedMimeType || !ALLOWED_MIME_TYPES.has(expectedMimeType)) {
-            return new Response(JSON.stringify({ error: 'File type not allowed' }), { 
-                status: 400,
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'Content-Security-Policy': "default-src 'none'",
-                    'X-Content-Type-Options': 'nosniff'
-                }
-            });
-        }
-
-        // Verify that the actual content type matches the extension
-        if (file.type !== expectedMimeType) {
-            return new Response(JSON.stringify({ error: 'File type does not match extension' }), { 
-                status: 400,
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'Content-Security-Policy': "default-src 'none'",
-                    'X-Content-Type-Options': 'nosniff'
-                }
-            });
-        }
+        const expectedMimeType = MIME_TYPE_MAP[fileExtension] || file.type || 'application/octet-stream';
 
         if (!file) {
             return new Response(JSON.stringify({ error: 'No file provided' }), { 
@@ -167,6 +184,7 @@ export async function handleAdminUpload(request, env) {
             });
         }
 
+        // Skip MIME type validation - accept all types
         const buffer = await file.arrayBuffer();
         await env.STUFF_BUCKET.put(filename, buffer, {
             httpMetadata: { 
