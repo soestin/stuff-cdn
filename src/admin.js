@@ -23,8 +23,13 @@ function checkRateLimit(ip) {
 }
 
 function sanitizeFileName(filename) {
-    // Remove any path traversal attempts and normalize
-    return filename.replace(/^\/+/, '').replace(/\.{2,}/g, '.');
+    // Allow forward slashes for subfolders, but normalize them
+    // Remove any leading slashes and protect against directory traversal
+    return filename
+        .replace(/^\/+/, '')  // Remove leading slashes
+        .replace(/\.{2,}/g, '.') // Replace multiple dots with single dot
+        .replace(/\/\.{2,}\//g, '/') // Prevent directory traversal in middle of path
+        .replace(/\/{2,}/g, '/'); // Replace multiple slashes with single slash
 }
 
 // Remove ALLOWED_MIME_TYPES since we'll accept all types
@@ -88,6 +93,39 @@ const MIME_TYPE_MAP = {
     '.eot': 'application/vnd.ms-fontobject'
 };
 
+function organizeIntoFolders(files) {
+    const fileTree = {};
+    
+    files.forEach(file => {
+        const parts = file.name.split('/');
+        let current = fileTree;
+        
+        // Handle files in root
+        if (parts.length === 1) {
+            if (!current.files) current.files = [];
+            current.files.push(file);
+            return;
+        }
+        
+        // Handle files in subfolders
+        for (let i = 0; i < parts.length - 1; i++) {
+            const part = parts[i];
+            if (!current.folders) current.folders = {};
+            if (!current.folders[part]) current.folders[part] = {};
+            current = current.folders[part];
+        }
+        
+        // Add the file to its folder
+        if (!current.files) current.files = [];
+        current.files.push({
+            ...file,
+            name: parts[parts.length - 1] // Store just the filename without path
+        });
+    });
+    
+    return fileTree;
+}
+
 export async function handleAdminList(request, env) {
     try {
         const username = await requireAuth(request, env);
@@ -108,8 +146,9 @@ export async function handleAdminList(request, env) {
         
         // Filter out null entries (files user doesn't have access to)
         const accessibleFiles = files.filter(file => file !== null);
+        const organizedFiles = organizeIntoFolders(accessibleFiles);
         
-        return new Response(JSON.stringify(accessibleFiles), {
+        return new Response(JSON.stringify(organizedFiles), {
             headers: { 
                 'Content-Type': 'application/json',
                 'X-Username': username,

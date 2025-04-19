@@ -49,6 +49,7 @@ export function adminDashboard() {
     <head>
         <title>CDN Admin Dashboard</title>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs/loader.js"></script>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
         <style>
             body { font-family: Arial, sans-serif; margin: 0; padding: 20px; }
             .container { max-width: 1200px; margin: 0 auto; }
@@ -153,6 +154,17 @@ export function adminDashboard() {
             .loading-overlay.hidden {
                 display: none;
             }
+            .file-item i {
+                margin-right: 5px;
+                color: #666;
+            }
+            .file-item a {
+                text-decoration: none;
+                color: #333;
+            }
+            .file-item a:hover {
+                text-decoration: underline;
+            }
         </style>
     </head>
     <body>
@@ -166,6 +178,9 @@ export function adminDashboard() {
                 <div class="section" id="uploadSection">
                     <h3>Upload File</h3>
                     <form id="uploadForm">
+                        <div class="current-path">
+                            Current Path: <span id="current-path">/</span>
+                        </div>
                         <input type="file" id="file" required>
                         <input type="text" id="filename" placeholder="Custom filename (optional)">
                         <button type="submit">Upload</button>
@@ -258,6 +273,8 @@ export function adminDashboard() {
             let isAdmin = false;
             let userPermissions = {};
             let isLoading = false;
+            let fileTreeData = {};
+            let currentFolderPath = '';
             
             if (!sessionId) {
                 window.location.href = '/admin/login';
@@ -377,23 +394,8 @@ export function adminDashboard() {
                         headers: { 'X-Session-Id': sessionId }
                     });
                     if (response.ok) {
-                        const files = await response.json();
-                        document.getElementById('fileList').innerHTML = files.map(file => \`
-                            <div class="file-item">
-                                <div>
-                                    <a href="\${window.location.origin}/\${file.name}" target="_blank">
-                                        \${file.name}
-                                    </a>
-                                    <small>(\${(file.size / 1024).toFixed(1)} KB)</small>
-                                </div>
-                                <div class="flex">
-                                    \${file.hasPermission && isEditableFile(file.name) ? 
-                                        \`<button onclick="editFile('\${file.name}')">Edit</button>\` : ''}
-                                    \${file.hasPermission ? 
-                                        \`<button onclick="deleteFile('\${file.name}')" class="delete">Delete</button>\` : ''}
-                                </div>
-                            </div>
-                        \`).join('');
+                        fileTreeData = await response.json();
+                        renderCurrentFolder();
                     } else if (response.status === 401) {
                         window.location.href = '/admin/login';
                     }
@@ -669,10 +671,19 @@ export function adminDashboard() {
                 e.preventDefault();
                 const formData = new FormData();
                 formData.append('file', document.getElementById('file').files[0]);
-                const customFilename = document.getElementById('filename').value;
-                if (customFilename) {
-                    formData.append('filename', customFilename);
+                let customFilename = document.getElementById('filename').value;
+                
+                // If no custom filename is provided, use the original filename
+                if (!customFilename) {
+                    customFilename = document.getElementById('file').files[0].name;
                 }
+                
+                // Prepend current folder path if we're in a subfolder
+                if (currentFolderPath) {
+                    customFilename = currentFolderPath + '/' + customFilename;
+                }
+                
+                formData.append('filename', customFilename);
                 
                 const response = await fetch('/admin/upload', {
                     method: 'POST',
@@ -684,7 +695,8 @@ export function adminDashboard() {
                     loadFiles();
                     document.getElementById('uploadForm').reset();
                 } else {
-                    alert('Upload failed');
+                    const error = await response.json();
+                    alert(error.error || 'Upload failed');
                 }
             };
 
@@ -809,6 +821,85 @@ export function adminDashboard() {
                 } catch (error) {
                     throw error;
                 }
+            }
+
+            function renderFileList(data, currentPath = '') {
+                let html = '<div class="file-list">';
+                
+                // Add parent folder link if we're in a subfolder
+                if (currentPath) {
+                    const parentPath = currentPath.split('/').slice(0, -1).join('/');
+                    html += \`
+                        <div class="file-item">
+                            <a href="#" onclick="navigateFolder('\${parentPath}'); return false;">
+                                <i class="fas fa-folder"></i> ../ (Parent Directory)
+                            </a>
+                        </div>
+                    \`;
+                }
+                
+                // Render folders
+                if (data.folders) {
+                    Object.entries(data.folders).forEach(([folderName, content]) => {
+                        const folderPath = currentPath ? \`\${currentPath}/\${folderName}\` : folderName;
+                        html += \`
+                            <div class="file-item">
+                                <a href="#" onclick="navigateFolder('\${folderPath}'); return false;">
+                                    <i class="fas fa-folder"></i> \${folderName}/
+                                </a>
+                            </div>
+                        \`;
+                    });
+                }
+                
+                // Render files
+                if (data.files) {
+                    data.files.forEach(file => {
+                        const fullPath = currentPath ? \`\${currentPath}/\${file.name}\` : file.name;
+                        html += \`
+                            <div class="file-item">
+                                <div>
+                                    <a href="\${window.location.origin}/\${fullPath}" target="_blank">
+                                        <i class="fas fa-file"></i> \${file.name}
+                                    </a>
+                                    <small>(\${(file.size / 1024).toFixed(1)} KB)</small>
+                                </div>
+                                <div class="flex">
+                                    \${file.hasPermission && isEditableFile(file.name) ? 
+                                        \`<button onclick="editFile('\${fullPath}')">Edit</button>\` : ''}
+                                    \${file.hasPermission ? 
+                                        \`<button onclick="deleteFile('\${fullPath}')" class="delete">Delete</button>\` : ''}
+                                </div>
+                            </div>
+                        \`;
+                    });
+                }
+                
+                html += '</div>';
+                return html;
+            }
+
+            function navigateFolder(path) {
+                currentFolderPath = path;
+                renderCurrentFolder();
+            }
+
+            function renderCurrentFolder() {
+                let current = fileTreeData;
+                const parts = currentFolderPath ? currentFolderPath.split('/') : [];
+                
+                // Navigate to current folder in the tree
+                for (const part of parts) {
+                    if (current.folders && current.folders[part]) {
+                        current = current.folders[part];
+                    } else {
+                        console.error('Folder not found:', part);
+                        return;
+                    }
+                }
+                
+                document.getElementById('fileList').innerHTML = renderFileList(current, currentFolderPath);
+                document.getElementById('current-path').textContent = currentFolderPath || '/';
             }
 
             loadFiles();
