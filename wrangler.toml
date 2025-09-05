@@ -10,8 +10,8 @@ enabled = true
 
 [[r2_buckets]]
 binding = "STUFF_BUCKET" 
-bucket_name = "cdn"
-preview_bucket_name = "cdn"
+bucket_name = "stuff"
+preview_bucket_name = "stuff"
 
 [[routes]]
 pattern = "cdn.soestin.nl"
