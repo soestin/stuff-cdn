@@ -1,5 +1,6 @@
 #:schema node_modules/wrangler/config-schema.json
-name = 'vibesmp-cdn'
+# wrangler.toml
+name = 'stuff-cdn'
 main = "src/index.js"
 compatibility_date = "2024-11-12"
 compatibility_flags = ["nodejs_compat"]
@@ -13,10 +14,10 @@ bucket_name = "cdn"
 preview_bucket_name = "cdn"
 
 [[routes]]
-pattern = "cdn.vibesmp.net"
+pattern = "cdn.soestin.nl"
 custom_domain = true
 
 [[kv_namespaces]]
 binding = "AUTH_STORE"
-id = "019b1f7348da4a2eaa7a28aed4a2f38a"
-preview_id = "019b1f7348da4a2eaa7a28aed4a2f38a"
+id = "cbae62d5f7fd4117add248b6def15e23"
+preview_id = "cbae62d5f7fd4117add248b6def15e23"
