@@ -14,7 +14,7 @@ export async function listUsers(env) {
     return users;
 }
 
-async function hashPassword(password) {
+export async function hashPassword(password) {
     const encoder = new TextEncoder();
     // Add a random salt
     const salt = crypto.getRandomValues(new Uint8Array(16));
